@@ -43,6 +43,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
   private stocksData: Map<string, StockData> = new Map();
   private isLoading: boolean = true;
   private stockCodes: string[] = [];
+  private lastUpdateTime: string = '';
 
   constructor() {
     // 读取配置并获取数据
@@ -147,6 +148,18 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
       );
     }
 
+    // 添加更新时间到列表末尾
+    if (this.lastUpdateTime) {
+      items.push(
+        new StockItem(
+          "更新时间",
+          vscode.TreeItemCollapsibleState.None,
+          this.lastUpdateTime,
+          new vscode.ThemeIcon("clock")
+        )
+      );
+    }
+
     return items;
   }
 
@@ -191,12 +204,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
           new vscode.ThemeColor(isUp ? "charts.green" : "charts.red")
         )
       ),
-      new StockItem(
-        "更新时间",
-        vscode.TreeItemCollapsibleState.None,
-        updateTime,
-        new vscode.ThemeIcon("clock")
-      ),
     ];
   }
 
@@ -209,6 +216,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
     }
 
     const updateTime = new Date().toLocaleTimeString("zh-CN");
+    this.lastUpdateTime = updateTime; // 保存最后更新时间
 
     // 清空旧数据
     this.stocksData.clear();
