@@ -20,15 +20,14 @@ class StockItem extends vscode.TreeItem {
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly description?: string,
-    public readonly tooltip?: string,
     public readonly iconPath?: vscode.ThemeIcon,
     public readonly stockCode?: string,
     public readonly isRoot: boolean = false
   ) {
     super(label, collapsibleState);
     this.description = description;
-    this.tooltip = tooltip;
     this.iconPath = iconPath;
+    this.tooltip = ''; // 禁用 tooltip
   }
 }
 
@@ -104,7 +103,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
           "上证指数",
           vscode.TreeItemCollapsibleState.Collapsed,
           "加载中...",
-          "正在获取股票数据",
           new vscode.ThemeIcon("loading~spin"),
           "1.000001",
           true
@@ -124,7 +122,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
             code,
             vscode.TreeItemCollapsibleState.Collapsed,
             "加载失败",
-            "点击刷新按钮重试",
             new vscode.ThemeIcon("error"),
             code,
             true
@@ -143,7 +140,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
           name,
           vscode.TreeItemCollapsibleState.Collapsed,
           `${current} ${arrow}${changePercent}%`,
-          `当前: ${current}\n涨跌: ${arrow} ${change} (${changePercent}%)\n点击展开查看详情`,
           new vscode.ThemeIcon(
             "graph-line",
             new vscode.ThemeColor(isUp ? "charts.green" : "charts.red")
@@ -175,7 +171,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         "昨日收盘",
         vscode.TreeItemCollapsibleState.None,
         previousClose,
-        `${name} 昨日收盘: ${previousClose}`,
         new vscode.ThemeIcon(
           "symbol-number",
           new vscode.ThemeColor("charts.blue")
@@ -185,7 +180,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         "涨跌点数",
         vscode.TreeItemCollapsibleState.None,
         `${arrow} ${change}`,
-        `涨跌点数: ${change}`,
         new vscode.ThemeIcon(
           isUp ? "arrow-up" : "arrow-down",
           new vscode.ThemeColor(isUp ? "charts.green" : "charts.red")
@@ -195,7 +189,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         "涨跌幅",
         vscode.TreeItemCollapsibleState.None,
         `${arrow} ${changePercent}%`,
-        `涨跌幅: ${changePercent}%`,
         new vscode.ThemeIcon(
           isUp ? "trending-up" : "trending-down",
           new vscode.ThemeColor(isUp ? "charts.green" : "charts.red")
@@ -205,7 +198,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         "更新时间",
         vscode.TreeItemCollapsibleState.None,
         updateTime,
-        `最后更新: ${updateTime}`,
         new vscode.ThemeIcon("clock")
       ),
     ];
