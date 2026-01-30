@@ -12,6 +12,16 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "股票看盘",
+      "properties": {
+        "stockInvestment.stockCodes": {
+          "type": "string",
+          "default": "",
+          "description": "自定义股票代码，使用逗号分隔。格式：市场.代码，例如：0.399001,0.399006,1.600519,1.000858（0=深圳，1=上海）"
+        }
+      }
+    },
     "views": {
       "explorer": [
         {

@@ -3,6 +3,16 @@ import * as http from 'http';
 
 let updateInterval: NodeJS.Timeout | undefined;
 
+// 股票数据接口
+interface StockData {
+	code: string;
+	name: string;
+	current: string;
+	change: string;
+	changePercent: string;
+	updateTime: string;
+}
+
 // 股票数据项
 class StockItem extends vscode.TreeItem {
 	constructor(
@@ -11,6 +21,7 @@ class StockItem extends vscode.TreeItem {
 		public readonly description?: string,
 		public readonly tooltip?: string,
 		public readonly iconPath?: vscode.ThemeIcon,
+		public readonly stockCode?: string,
 		public readonly isRoot: boolean = false
 	) {
 		super(label, collapsibleState);
@@ -25,17 +36,41 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 	private _onDidChangeTreeData: vscode.EventEmitter<StockItem | undefined | null | void> = new vscode.EventEmitter<StockItem | undefined | null | void>();
 	readonly onDidChangeTreeData: vscode.Event<StockItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-	private stockData: any = null;
+	private stocksData: Map<string, StockData> = new Map();
 	private isLoading: boolean = true;
+	private stockCodes: string[] = [];
 
 	constructor() {
-		// 立即获取一次数据
-		this.fetchStockData();
+		// 读取配置并获取数据
+		this.loadStockCodes();
+		this.fetchAllStockData();
+	}
+
+	// 加载股票代码配置
+	private loadStockCodes(): void {
+		// 默认显示上证指数
+		this.stockCodes = ['1.000001'];
+
+		// 读取用户配置的股票代码
+		const config = vscode.workspace.getConfiguration('stockInvestment');
+		const customCodes = config.get<string>('stockCodes', '');
+		
+		if (customCodes && customCodes.trim()) {
+			const codes = customCodes.split(',')
+				.map(code => code.trim())
+				.filter(code => code.length > 0);
+			
+			// 将自定义股票代码添加到列表
+			this.stockCodes.push(...codes);
+		}
+
+		console.log('加载的股票代码:', this.stockCodes);
 	}
 
 	// 刷新视图
 	refresh(): void {
-		this.fetchStockData();
+		this.loadStockCodes();
+		this.fetchAllStockData();
 	}
 
 	// 获取树节点
@@ -46,16 +81,16 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 	// 获取子节点
 	getChildren(element?: StockItem): Thenable<StockItem[]> {
 		if (!element) {
-			// 根节点 - 显示上证指数
+			// 根节点 - 显示所有股票
 			return Promise.resolve(this.getRootItems());
-		} else if (element.isRoot) {
-			// 展开根节点 - 显示详细数据
-			return Promise.resolve(this.getDetailItems());
+		} else if (element.isRoot && element.stockCode) {
+			// 展开某个股票 - 显示详细数据
+			return Promise.resolve(this.getDetailItems(element.stockCode));
 		}
 		return Promise.resolve([]);
 	}
 
-	// 获取根节点（上证指数）
+	// 获取根节点（所有股票列表）
 	private getRootItems(): StockItem[] {
 		if (this.isLoading) {
 			return [
@@ -65,58 +100,73 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 					'加载中...',
 					'正在获取股票数据',
 					new vscode.ThemeIcon('loading~spin'),
+					'1.000001',
 					true
 				)
 			];
 		}
 
-		if (!this.stockData) {
-			return [
+		const items: StockItem[] = [];
+
+		// 按照配置顺序显示股票
+		for (const code of this.stockCodes) {
+			const stockData = this.stocksData.get(code);
+			
+			if (!stockData) {
+				items.push(
+					new StockItem(
+						code,
+						vscode.TreeItemCollapsibleState.Collapsed,
+						'加载失败',
+						'点击刷新按钮重试',
+						new vscode.ThemeIcon('error'),
+						code,
+						true
+					)
+				);
+				continue;
+			}
+
+			const { name, current, change, changePercent } = stockData;
+			const changeNum = parseFloat(change);
+			const isUp = changeNum >= 0;
+			const arrow = isUp ? '↑' : '↓';
+
+			items.push(
 				new StockItem(
-					'上证指数',
+					name,
 					vscode.TreeItemCollapsibleState.Collapsed,
-					'加载失败',
-					'点击刷新按钮重试',
-					new vscode.ThemeIcon('error'),
+					`${current} ${arrow}${changePercent}%`,
+					`当前: ${current}\n涨跌: ${arrow} ${change} (${changePercent}%)\n点击展开查看详情`,
+					new vscode.ThemeIcon('graph-line', new vscode.ThemeColor(isUp ? 'charts.green' : 'charts.red')),
+					code,
 					true
 				)
-			];
+			);
 		}
 
-		const { current, change, changePercent } = this.stockData;
-		const changeNum = parseFloat(change);
-		const isUp = changeNum >= 0;
-		const arrow = isUp ? '↑' : '↓';
-
-		return [
-			new StockItem(
-				'上证指数',
-				vscode.TreeItemCollapsibleState.Collapsed,
-				`${current} ${arrow}${changePercent}%`,
-				`当前: ${current} 点\n涨跌: ${arrow} ${change} (${changePercent}%)\n点击展开查看详情`,
-				new vscode.ThemeIcon('graph-line', new vscode.ThemeColor(isUp ? 'charts.green' : 'charts.red')),
-				true
-			)
-		];
+		return items;
 	}
 
 	// 获取详细数据项
-	private getDetailItems(): StockItem[] {
-		if (!this.stockData) {
+	private getDetailItems(stockCode: string): StockItem[] {
+		const stockData = this.stocksData.get(stockCode);
+		
+		if (!stockData) {
 			return [];
 		}
 
-		const { name, current, change, changePercent, updateTime } = this.stockData;
+		const { name, current, change, changePercent, updateTime } = stockData;
 		const changeNum = parseFloat(change);
 		const isUp = changeNum >= 0;
 		const arrow = isUp ? '↑' : '↓';
 
 		return [
 			new StockItem(
-				'当前点数',
+				'当前价格',
 				vscode.TreeItemCollapsibleState.None,
 				current,
-				`${name} 当前点数: ${current}`,
+				`${name} 当前价格: ${current}`,
 				new vscode.ThemeIcon('symbol-number', new vscode.ThemeColor('charts.blue'))
 			),
 			new StockItem(
@@ -143,9 +193,36 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 		];
 	}
 
-	// 获取股票数据
-	private fetchStockData(): void {
-		const url = 'http://push2.eastmoney.com/api/qt/stock/get?secid=1.000001&fields=f43,f58,f169,f170';
+	// 获取所有股票数据
+	private fetchAllStockData(): void {
+		if (this.stockCodes.length === 0) {
+			this.isLoading = false;
+			this._onDidChangeTreeData.fire();
+			return;
+		}
+
+		const updateTime = new Date().toLocaleTimeString('zh-CN');
+		let completed = 0;
+
+		// 清空旧数据
+		this.stocksData.clear();
+
+		// 逐个获取股票数据（更可靠）
+		for (const stockCode of this.stockCodes) {
+			this.fetchSingleStock(stockCode, updateTime, () => {
+				completed++;
+				if (completed === this.stockCodes.length) {
+					this.isLoading = false;
+					this._onDidChangeTreeData.fire();
+				}
+			});
+		}
+	}
+
+	// 获取单个股票数据
+	private fetchSingleStock(stockCode: string, updateTime: string, callback: () => void): void {
+		// 使用单个股票查询API
+		const url = `http://push2.eastmoney.com/api/qt/stock/get?secid=${stockCode}&fields=f43,f58,f169,f170`;
 
 		http.get(url, (res) => {
 			let data = '';
@@ -156,35 +233,39 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 
 			res.on('end', () => {
 				try {
-					console.log('data====>', data);
 					const jsonData = JSON.parse(data);
 					
 					if (jsonData && jsonData.data) {
 						const stockData = jsonData.data;
-						const name = stockData.f58 || '上证指数';
+						const name = stockData.f58 || stockCode;
+						
+						// 单个查询API返回的数据需要除以100
 						const current = (stockData.f43 / 100).toFixed(2);
 						const changePercent = (stockData.f170 / 100).toFixed(2);
 						const change = (stockData.f169 / 100).toFixed(2);
-						const updateTime = new Date().toLocaleTimeString('zh-CN');
 
-						this.stockData = { name, current, change, changePercent, updateTime };
-						this.isLoading = false;
-						
-						// 刷新树视图
-						this._onDidChangeTreeData.fire();
+						console.log(`解析股票 ${stockCode}: 名称=${name}, 价格=${current}, 涨跌=${change}, 涨跌幅=${changePercent}%`);
+
+						this.stocksData.set(stockCode, {
+							code: stockCode,
+							name,
+							current,
+							change,
+							changePercent,
+							updateTime
+						});
+					} else {
+						console.log(`股票 ${stockCode} 数据无效`);
 					}
 				} catch (error) {
-					console.error('解析错误:', error);
-					this.isLoading = false;
-					this.stockData = null;
-					this._onDidChangeTreeData.fire();
+					console.error(`解析股票 ${stockCode} 错误:`, error);
 				}
+				
+				callback();
 			});
 		}).on('error', (error) => {
-			console.error('获取数据失败:', error);
-			this.isLoading = false;
-			this.stockData = null;
-			this._onDidChangeTreeData.fire();
+			console.error(`获取股票 ${stockCode} 数据失败:`, error);
+			callback();
 		});
 	}
 
@@ -197,7 +278,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 
 		// 设置新的定时器
 		updateInterval = setInterval(() => {
-			this.fetchStockData();
+			this.fetchAllStockData();
 		}, interval);
 	}
 
@@ -223,6 +304,14 @@ export function activate(context: vscode.ExtensionContext) {
 	// 启动自动更新（每3秒更新一次）
 	stockDataProvider.startAutoUpdate(3000);
 
+	// 监听配置变化
+	const configChangeListener = vscode.workspace.onDidChangeConfiguration(e => {
+		if (e.affectsConfiguration('stockInvestment.stockCodes')) {
+			console.log('股票代码配置已更改，重新加载数据');
+			stockDataProvider.refresh();
+		}
+	});
+
 	// 注册刷新命令
 	const refreshCommand = vscode.commands.registerCommand('stockView.refresh', () => {
 		stockDataProvider.refresh();
@@ -242,6 +331,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// 添加到订阅列表
 	context.subscriptions.push(
 		treeView,
+		configChangeListener,
 		refreshCommand,
 		openWebsiteCommand,
 		openPanelCommand
