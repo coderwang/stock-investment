@@ -361,6 +361,8 @@ export function activate(context: vscode.ExtensionContext) {
     async () => {
       // 显示资源管理器侧边栏
       await vscode.commands.executeCommand("workbench.view.explorer");
+      // 确保 stockView 可见（即使被隐藏）
+      await vscode.commands.executeCommand("stockView.focus");
     }
   );
 

@@ -1,9 +1,7 @@
 # Change Log
 
-All notable changes to the "stock-investment" extension will be documented in this file.
+## [1.0.0] - 2026-01-30
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+### 🎉 首个版本
 
-## [Unreleased]
-
-- Initial release
+- 在侧边栏中展示自选股涨跌情况

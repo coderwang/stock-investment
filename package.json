@@ -1,8 +1,21 @@
 {
   "name": "stock-investment",
   "displayName": "股票看盘工具",
-  "description": "",
-  "version": "0.0.1",
+  "description": "快速掌握自选股动态，工作投资两不误！",
+  "keywords": [
+    "股票",
+    "A股",
+    "股市",
+    "自选股",
+    "大盘"
+  ],
+  "version": "1.0.0",
+  "publisher": "coderwsh",
+  "icon": "assets/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coderwang/stock-investment"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -71,16 +84,16 @@
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
-    "@types/vscode": "^1.108.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "typescript-eslint": "^8.52.0",
-    "eslint": "^9.39.2",
-    "typescript": "^5.9.3",
-    "ts-loader": "^9.5.4",
-    "webpack": "^5.104.1",
-    "webpack-cli": "^6.0.1",
+    "@types/vscode": "^1.80.0",
     "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.39.2",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.52.0",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
   }
 }
