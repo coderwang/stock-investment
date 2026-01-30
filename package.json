@@ -1,0 +1,77 @@
+{
+  "name": "stock-investment",
+  "displayName": "股票看盘工具",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "stockView",
+          "name": "Stock"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "extension.showStockPanel",
+        "title": "Show Stock Panel"
+      },
+      {
+        "command": "stockView.openWebsite",
+        "icon": "$(link-external)",
+        "title": "打开东方财富",
+        "enablement": "view == stockView"
+      },
+      {
+        "command": "stockView.refresh",
+        "icon": "$(refresh)",
+        "title": "刷新股票面板",
+        "enablement": "view == stockView"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "stockView.refresh",
+          "when": "view == stockView",
+          "group": "navigation"
+        },
+        {
+          "command": "stockView.openWebsite",
+          "when": "view == stockView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.108.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.52.0",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3",
+    "ts-loader": "^9.5.4",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
