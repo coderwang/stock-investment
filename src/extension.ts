@@ -10,6 +10,7 @@ interface StockData {
   current: string;
   change: string;
   changePercent: string;
+  previousClose: string; // 昨日收盘
   updateTime: string;
 }
 
@@ -164,17 +165,17 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
       return [];
     }
 
-    const { name, current, change, changePercent, updateTime } = stockData;
+    const { name, current, change, changePercent, previousClose, updateTime } = stockData;
     const changeNum = parseFloat(change);
     const isUp = changeNum >= 0;
     const arrow = isUp ? "↑" : "↓";
 
     return [
       new StockItem(
-        "当前价格",
+        "昨日收盘",
         vscode.TreeItemCollapsibleState.None,
-        current,
-        `${name} 当前价格: ${current}`,
+        previousClose,
+        `${name} 昨日收盘: ${previousClose}`,
         new vscode.ThemeIcon(
           "symbol-number",
           new vscode.ThemeColor("charts.blue")
@@ -238,7 +239,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
   ): void {
     // 使用批量查询API，一次性获取所有股票数据
     const secids = stockCodes.join(",");
-    const url = `http://push2.eastmoney.com/api/qt/ulist.np/get?secids=${secids}&fields=f12,f13,f14,f2,f4,f3`;
+    const url = `http://push2.eastmoney.com/api/qt/ulist.np/get?secids=${secids}&fields=f12,f13,f14,f2,f4,f3,f18`;
 
     console.log(`批量获取 ${stockCodes.length} 只股票数据`);
 
@@ -271,9 +272,10 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
                 const current = (stockData.f2 / 100).toFixed(2);
                 const changePercent = (stockData.f3 / 100).toFixed(2);
                 const change = (stockData.f4 / 100).toFixed(2);
+                const previousClose = (stockData.f18 / 100).toFixed(2);
 
                 console.log(
-                  `解析股票 ${stockCode}: 名称=${name}, 价格=${current}, 涨跌=${change}, 涨跌幅=${changePercent}%`
+                  `解析股票 ${stockCode}: 名称=${name}, 价格=${current}, 昨收=${previousClose}, 涨跌=${change}, 涨跌幅=${changePercent}%`
                 );
 
                 this.stocksData.set(stockCode, {
@@ -282,6 +284,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
                   current,
                   change,
                   changePercent,
+                  previousClose,
                   updateTime,
                 });
               }
