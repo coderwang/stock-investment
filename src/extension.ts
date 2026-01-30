@@ -195,15 +195,6 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
           new vscode.ThemeColor(isUp ? "charts.green" : "charts.red")
         )
       ),
-      new StockItem(
-        "涨跌幅",
-        vscode.TreeItemCollapsibleState.None,
-        `${arrow} ${changePercent}%`,
-        new vscode.ThemeIcon(
-          isUp ? "trending-up" : "trending-down",
-          new vscode.ThemeColor(isUp ? "charts.green" : "charts.red")
-        )
-      ),
     ];
   }
 
