@@ -139,11 +139,8 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         new StockItem(
           name,
           vscode.TreeItemCollapsibleState.Collapsed,
-          `${current} ${arrow}${changePercent}%`,
-          new vscode.ThemeIcon(
-            "graph-line",
-            new vscode.ThemeColor(isUp ? "charts.green" : "charts.red")
-          ),
+          `${current} ${arrow} ${changePercent}%`,
+          undefined,
           code,
           true
         )
