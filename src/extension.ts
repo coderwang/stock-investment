@@ -136,12 +136,40 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
       const isUp = changeNum >= 0;
       const arrow = isUp ? "↑" : "↓";
 
+      // 根据市场代码添加标识和图标
+      let marketTag = '';
+      let iconColor: string | undefined = 'charts.green';
+      const marketCode = code.split('.')[0];
+      const stockCode = code.split('.')[1];
+      
+      if (marketCode === '116') {
+        // 港股 - 紫色
+        marketTag = ' ［港］';
+        iconColor = 'charts.purple';
+      } else if (marketCode === '105' || marketCode === '106' || marketCode === '107') {
+        // 美股 - 蓝色
+        marketTag = ' ［美］';
+        iconColor = 'charts.blue';
+      } else if (marketCode === '0' && stockCode.startsWith('3')) {
+        // A股创业板 - 橙色
+        marketTag = ' ［创］';
+        iconColor = 'charts.orange';
+      } else if (marketCode === '1' && stockCode.startsWith('688')) {
+        // A股科创板 - 黄色
+        marketTag = ' ［科］';
+        iconColor = 'charts.yellow';
+      }
+
+      const icon = iconColor 
+        ? new vscode.ThemeIcon("circle-filled", new vscode.ThemeColor(iconColor))
+        : undefined;
+
       items.push(
         new StockItem(
           name,
           vscode.TreeItemCollapsibleState.Collapsed,
-          `${current} ${arrow} ${changePercent}%`,
-          undefined,
+          `${current} ${arrow} ${changePercent}%${marketTag}`,
+          icon,
           code,
           true
         )
@@ -192,7 +220,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         `${arrow} ${change}`,
         new vscode.ThemeIcon(
           isUp ? "arrow-up" : "arrow-down",
-          new vscode.ThemeColor(isUp ? "charts.green" : "charts.red")
+          new vscode.ThemeColor(isUp ? "charts.red" : "charts.green")
         )
       ),
     ];
