@@ -2,13 +2,13 @@
 
 在侧边栏中展示自选股涨跌情况，每隔3秒自动刷新，示例如下：
 
-![stock-investment](./src/assets/example.jpg)
+![stock-investment](./src/assets/example.png)
 
 ## 使用方式
 
 在`VS Code Settings`中配置自选股代码，示例如下：
 
-![usage](./src/assets/usage.jpg)
+![usage](./src/assets/usage.png)
 
 ## 问题反馈
 
