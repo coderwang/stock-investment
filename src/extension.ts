@@ -206,7 +206,8 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
       );
     }
 
-    // 计算今日总盈亏（仅统计有持仓的股票）
+    // 计算持仓市值和今日总盈亏（仅统计有持仓的股票）
+    let totalMarketValue = 0;
     let totalProfitLoss = 0;
     let hasHoldings = false;
     
@@ -214,13 +215,32 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
       const stockData = this.stocksData.get(code);
       if (stockData && shares > 0) {
         hasHoldings = true;
+        const currentPrice = parseFloat(stockData.current);
         const changeNum = parseFloat(stockData.change);
+        
+        // 持仓市值 = 现价 × 股数
+        totalMarketValue += currentPrice * shares;
+        // 今日盈亏 = 涨跌点数 × 股数
         totalProfitLoss += changeNum * shares;
       }
     }
 
-    // 如果有持仓，在更新时间上方显示总盈亏
+    // 如果有持仓，在更新时间上方显示持仓市值和总盈亏
     if (hasHoldings) {
+      // 持仓市值
+      items.push(
+        new StockItem(
+          "持仓市值",
+          vscode.TreeItemCollapsibleState.None,
+          totalMarketValue.toFixed(2),
+          new vscode.ThemeIcon(
+            "graph",
+            new vscode.ThemeColor("charts.blue")
+          )
+        )
+      );
+      
+      // 今日盈亏
       const totalProfitLossStr = totalProfitLoss >= 0 
         ? `+${totalProfitLoss.toFixed(2)}` 
         : totalProfitLoss.toFixed(2);
