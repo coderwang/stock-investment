@@ -550,6 +550,41 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
     // 刷新视图
     this.refresh();
   }
+
+  // 添加股票
+  async addStock(stockCodeInput: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration("stockInvestment");
+    const customCodes = config.get<string[]>("stockCodeList", []);
+    
+    const trimmedInput = stockCodeInput.trim();
+    
+    // 解析输入的股票代码
+    const parts = trimmedInput.split(":");
+    const stockCode = parts[0].trim();
+    
+    // 检查是否已存在
+    for (const code of customCodes) {
+      const existingParts = code.trim().split(":");
+      const existingCode = existingParts[0].trim();
+      
+      if (existingCode === stockCode) {
+        throw new Error(`股票 ${stockCode} 已存在`);
+      }
+    }
+    
+    // 添加新股票到配置列表
+    const newCodes = [...customCodes, trimmedInput];
+    
+    // 更新配置
+    await config.update(
+      "stockCodeList",
+      newCodes,
+      vscode.ConfigurationTarget.Global
+    );
+    
+    // 刷新视图
+    this.refresh();
+  }
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -720,6 +755,72 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // 注册添加股票命令
+  const addStockCommand = vscode.commands.registerCommand(
+    "stockView.addStock",
+    async () => {
+      // 显示输入框
+      const input = await vscode.window.showInputBox({
+        prompt: "请输入股票代码",
+        placeHolder: "格式：市场.代码 或 市场.代码:持有股数（如：1.600519 或 1.600519:100）",
+        validateInput: (value: string) => {
+          const trimmed = value.trim();
+          
+          if (trimmed === "") {
+            return "股票代码不能为空";
+          }
+          
+          // 验证格式：市场.代码 或 市场.代码:持有股数
+          const regex = /^(\d+)\.([A-Za-z0-9]+)(:(\d+))?$/;
+          const match = trimmed.match(regex);
+          
+          if (!match) {
+            return "格式错误，请输入：市场.代码 或 市场.代码:持有股数";
+          }
+          
+          // 验证市场代码
+          const marketCode = match[1];
+          const validMarkets = ["0", "1", "105", "106", "107", "116"];
+          if (!validMarkets.includes(marketCode)) {
+            return "市场代码无效，支持：0(深圳), 1(上海), 105/106/107(美股), 116(港股)";
+          }
+          
+          // 如果有持有股数，验证是否为正整数
+          if (match[3]) {
+            const shares = parseInt(match[4], 10);
+            if (isNaN(shares) || shares <= 0 || !Number.isInteger(shares)) {
+              return "持有股数必须是大于0的整数";
+            }
+          }
+          
+          return null;
+        }
+      });
+
+      // 用户取消输入
+      if (input === undefined) {
+        return;
+      }
+
+      try {
+        // 添加股票
+        await stockDataProvider.addStock(input);
+
+        // 显示成功消息
+        vscode.window.showInformationMessage(
+          `已添加股票 ${input}`
+        );
+      } catch (error) {
+        // 显示错误消息
+        if (error instanceof Error) {
+          vscode.window.showErrorMessage(error.message);
+        } else {
+          vscode.window.showErrorMessage("添加股票失败");
+        }
+      }
+    }
+  );
+
   // 添加到订阅列表
   context.subscriptions.push(
     treeView,
@@ -728,7 +829,8 @@ export function activate(context: vscode.ExtensionContext) {
     openWebsiteCommand,
     openPanelCommand,
     editHoldingSharesCommand,
-    deleteStockCommand
+    deleteStockCommand,
+    addStockCommand
   );
 }
 

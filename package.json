@@ -74,19 +74,30 @@
         "command": "stockView.deleteStock",
         "title": "删除股票",
         "enablement": "view == stockView && viewItem == stockRoot"
+      },
+      {
+        "command": "stockView.addStock",
+        "icon": "$(add)",
+        "title": "添加自选股",
+        "enablement": "view == stockView"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "stockView.refresh",
-          "when": "view == stockView",
-          "group": "navigation"
-        },
-        {
           "command": "stockView.openWebsite",
           "when": "view == stockView",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "stockView.refresh",
+          "when": "view == stockView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "stockView.addStock",
+          "when": "view == stockView",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
