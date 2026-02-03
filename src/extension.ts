@@ -66,8 +66,8 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         .map((code) => code.trim())
         .filter((code) => code.length > 0);
 
-      // 将自定义股票代码添加到列表
-      this.stockCodes.push(...codes);
+      // 使用自定义股票代码
+      this.stockCodes = codes;
     }
 
     console.log("加载的股票代码:", this.stockCodes);
