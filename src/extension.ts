@@ -201,6 +201,38 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
       );
     }
 
+    // 计算今日总盈亏（仅统计有持仓的股票）
+    let totalProfitLoss = 0;
+    let hasHoldings = false;
+    
+    for (const [code, shares] of this.holdingShares.entries()) {
+      const stockData = this.stocksData.get(code);
+      if (stockData && shares > 0) {
+        hasHoldings = true;
+        const changeNum = parseFloat(stockData.change);
+        totalProfitLoss += changeNum * shares;
+      }
+    }
+
+    // 如果有持仓，在更新时间上方显示总盈亏
+    if (hasHoldings) {
+      const totalProfitLossStr = totalProfitLoss >= 0 
+        ? `+${totalProfitLoss.toFixed(2)}` 
+        : totalProfitLoss.toFixed(2);
+      
+      items.push(
+        new StockItem(
+          "今日盈亏",
+          vscode.TreeItemCollapsibleState.None,
+          totalProfitLossStr,
+          new vscode.ThemeIcon(
+            totalProfitLoss >= 0 ? "arrow-up" : "arrow-down",
+            new vscode.ThemeColor(totalProfitLoss >= 0 ? "charts.red" : "charts.green")
+          )
+        )
+      );
+    }
+
     // 添加更新时间到列表末尾
     if (this.lastUpdateTime) {
       items.push(
