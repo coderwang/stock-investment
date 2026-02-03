@@ -3,15 +3,16 @@
   "displayName": "股票看盘工具",
   "description": "支持A股、港股、美股，快速掌握自选股动态，工作投资两不误！",
   "keywords": [
+    "炒股",
     "股票",
+    "股市",
     "A股",
     "港股",
     "美股",
-    "股市",
     "自选股",
     "大盘"
   ],
-  "version": "1.2.0",
+  "version": "1.3.0",
   "publisher": "coderwsh",
   "icon": "assets/icon.png",
   "repository": {

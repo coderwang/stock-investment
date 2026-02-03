@@ -6,9 +6,13 @@
 
 ## 使用方式
 
-在`VS Code Settings`中配置自选股代码，示例如下：
+1、常规方式：在`VS Code Settings`中配置自选股代码，示例如下：
 
 ![usage](./src/assets/usage.png)
+
+2、快捷方式：（1）右键菜单支持编辑与删除 （2）顶部菜单支持新增与刷新
+
+![usage2](./src/assets/usage2.png)
 
 ## 问题反馈
 
