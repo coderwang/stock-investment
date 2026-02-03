@@ -69,6 +69,11 @@
         "command": "stockView.editHoldingShares",
         "title": "编辑持有股数",
         "enablement": "view == stockView && viewItem == stockRoot"
+      },
+      {
+        "command": "stockView.deleteStock",
+        "title": "删除股票",
+        "enablement": "view == stockView && viewItem == stockRoot"
       }
     ],
     "menus": {
@@ -88,7 +93,12 @@
         {
           "command": "stockView.editHoldingShares",
           "when": "view == stockView && viewItem == stockRoot",
-          "group": "inline@1"
+          "group": "stock@1"
+        },
+        {
+          "command": "stockView.deleteStock",
+          "when": "view == stockView && viewItem == stockRoot",
+          "group": "stock@2"
         }
       ]
     }

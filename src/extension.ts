@@ -495,6 +495,41 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
     // 刷新视图
     this.refresh();
   }
+
+  // 删除股票
+  async deleteStock(stockCode: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration("stockInvestment");
+    const customCodes = config.get<string[]>("stockCodeList", []);
+    
+    // 创建新的配置数组，过滤掉要删除的股票
+    const newCodes: string[] = [];
+    
+    for (const code of customCodes) {
+      const trimmedCode = code.trim();
+      if (!trimmedCode) {
+        continue;
+      }
+      
+      // 解析股票代码（去掉可能存在的持有股数）
+      const parts = trimmedCode.split(":");
+      const codeOnly = parts[0].trim();
+      
+      // 保留非目标股票代码
+      if (codeOnly !== stockCode) {
+        newCodes.push(trimmedCode);
+      }
+    }
+    
+    // 更新配置
+    await config.update(
+      "stockCodeList",
+      newCodes,
+      vscode.ConfigurationTarget.Global
+    );
+    
+    // 刷新视图
+    this.refresh();
+  }
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -630,6 +665,41 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // 注册删除股票命令
+  const deleteStockCommand = vscode.commands.registerCommand(
+    "stockView.deleteStock",
+    async (item: StockItem) => {
+      if (!item || !item.stockCode) {
+        vscode.window.showErrorMessage("无法获取股票代码");
+        return;
+      }
+
+      const stockCode = item.stockCode;
+      const stockName = item.label;
+
+      // 显示确认对话框
+      const answer = await vscode.window.showWarningMessage(
+        `确定要删除 ${stockName} (${stockCode}) 吗？`,
+        { modal: true },
+        "确定",
+        "取消"
+      );
+
+      // 用户选择取消
+      if (answer !== "确定") {
+        return;
+      }
+
+      // 删除股票
+      await stockDataProvider.deleteStock(stockCode);
+
+      // 显示成功消息
+      vscode.window.showInformationMessage(
+        `已删除 ${stockName}`
+      );
+    }
+  );
+
   // 添加到订阅列表
   context.subscriptions.push(
     treeView,
@@ -637,7 +707,8 @@ export function activate(context: vscode.ExtensionContext) {
     refreshCommand,
     openWebsiteCommand,
     openPanelCommand,
-    editHoldingSharesCommand
+    editHoldingSharesCommand,
+    deleteStockCommand
   );
 }
 
