@@ -28,6 +28,11 @@ class StockItem extends vscode.TreeItem {
     this.description = description;
     this.iconPath = iconPath;
     this.tooltip = ''; // 禁用 tooltip
+    
+    // 设置 contextValue，用于右键菜单的显示条件
+    if (isRoot && stockCode) {
+      this.contextValue = 'stockRoot';
+    }
   }
 }
 
@@ -441,6 +446,55 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
       updateInterval = undefined;
     }
   }
+
+  // 更新持有股数
+  async updateHoldingShares(stockCode: string, shares: number): Promise<void> {
+    const config = vscode.workspace.getConfiguration("stockInvestment");
+    const customCodes = config.get<string[]>("stockCodeList", []);
+    
+    // 创建新的配置数组
+    const newCodes: string[] = [];
+    let found = false;
+    
+    for (const code of customCodes) {
+      const trimmedCode = code.trim();
+      if (!trimmedCode) {
+        continue;
+      }
+      
+      // 解析股票代码（去掉可能存在的持有股数）
+      const parts = trimmedCode.split(":");
+      const codeOnly = parts[0].trim();
+      
+      if (codeOnly === stockCode) {
+        found = true;
+        // 如果股数大于0，添加带股数的配置；否则只添加代码
+        if (shares > 0) {
+          newCodes.push(`${stockCode}:${shares}`);
+        } else {
+          newCodes.push(stockCode);
+        }
+      } else {
+        // 保持原有配置不变
+        newCodes.push(trimmedCode);
+      }
+    }
+    
+    // 如果没有找到该股票代码，且股数大于0，则添加新配置
+    if (!found && shares > 0) {
+      newCodes.push(`${stockCode}:${shares}`);
+    }
+    
+    // 更新配置
+    await config.update(
+      "stockCodeList",
+      newCodes,
+      vscode.ConfigurationTarget.Global
+    );
+    
+    // 刷新视图
+    this.refresh();
+  }
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -493,13 +547,97 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // 注册编辑持有股数命令
+  const editHoldingSharesCommand = vscode.commands.registerCommand(
+    "stockView.editHoldingShares",
+    async (item: StockItem) => {
+      if (!item || !item.stockCode) {
+        vscode.window.showErrorMessage("无法获取股票代码");
+        return;
+      }
+
+      const stockCode = item.stockCode;
+      const stockName = item.label;
+      
+      // 获取当前持有股数（如果有）
+      const config = vscode.workspace.getConfiguration("stockInvestment");
+      const customCodes = config.get<string[]>("stockCodeList", []);
+      let currentShares = 0;
+      
+      for (const code of customCodes) {
+        const parts = code.trim().split(":");
+        if (parts[0].trim() === stockCode && parts.length > 1) {
+          const shares = parseFloat(parts[1].trim());
+          if (!isNaN(shares) && shares > 0) {
+            currentShares = shares;
+          }
+          break;
+        }
+      }
+
+      // 显示输入框
+      const input = await vscode.window.showInputBox({
+        prompt: `请输入 ${stockName} (${stockCode}) 的持有股数`,
+        placeHolder: "输入大于等于0的整数，输入0或留空表示清除持仓",
+        value: currentShares > 0 ? currentShares.toString() : "",
+        validateInput: (value: string) => {
+          if (value.trim() === "") {
+            return null; // 允许空值（表示清除）
+          }
+          
+          const num = parseFloat(value);
+          
+          // 检查是否为有效数字
+          if (isNaN(num)) {
+            return "请输入有效的数字";
+          }
+          
+          // 检查是否为非负数
+          if (num < 0) {
+            return "持有股数不能为负数";
+          }
+          
+          // 检查是否为整数
+          if (!Number.isInteger(num)) {
+            return "请输入整数";
+          }
+          
+          return null;
+        }
+      });
+
+      // 用户取消输入
+      if (input === undefined) {
+        return;
+      }
+
+      // 解析输入值
+      const shares = input.trim() === "" ? 0 : parseInt(input.trim(), 10);
+
+      // 更新持有股数
+      await stockDataProvider.updateHoldingShares(stockCode, shares);
+
+      // 显示成功消息
+      if (shares > 0) {
+        vscode.window.showInformationMessage(
+          `已设置 ${stockName} 持有股数为 ${shares}`
+        );
+      } else {
+        vscode.window.showInformationMessage(
+          `已清除 ${stockName} 的持仓配置`
+        );
+      }
+    }
+  );
+
   // 添加到订阅列表
   context.subscriptions.push(
     treeView,
     configChangeListener,
     refreshCommand,
     openWebsiteCommand,
-    openPanelCommand
+    openPanelCommand,
+    editHoldingSharesCommand
   );
 }
 

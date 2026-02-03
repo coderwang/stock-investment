@@ -64,6 +64,11 @@
         "icon": "$(refresh)",
         "title": "刷新股票面板",
         "enablement": "view == stockView"
+      },
+      {
+        "command": "stockView.editHoldingShares",
+        "title": "编辑持有股数",
+        "enablement": "view == stockView && viewItem == stockRoot"
       }
     ],
     "menus": {
@@ -77,6 +82,13 @@
           "command": "stockView.openWebsite",
           "when": "view == stockView",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "stockView.editHoldingShares",
+          "when": "view == stockView && viewItem == stockRoot",
+          "group": "inline@1"
         }
       ]
     }
