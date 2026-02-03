@@ -346,11 +346,16 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
                 const stockCode = `${marketCode}.${code}`;
                 const name = stockData.f14 || stockCode;
 
-                // 批量查询API返回的数据需要除以100
-                const current = (stockData.f2 / 100).toFixed(2);
+                // 批量查询API返回的数据需要除以100（A股）或除以1000（港股、美股）
+                // 港股市场代码：116，美股市场代码：105、106、107
+                const isHKorUS = marketCode === 116 || marketCode === 105 || marketCode === 106 || marketCode === 107;
+                const divisor = isHKorUS ? 1000 : 100;
+                const decimals = isHKorUS ? 3 : 2;
+                
+                const current = (stockData.f2 / divisor).toFixed(decimals);
                 const changePercent = (stockData.f3 / 100).toFixed(2);
-                const change = (stockData.f4 / 100).toFixed(2);
-                const previousClose = (stockData.f18 / 100).toFixed(2);
+                const change = (stockData.f4 / divisor).toFixed(decimals);
+                const previousClose = (stockData.f18 / divisor).toFixed(decimals);
 
                 console.log(
                   `解析股票 ${stockCode}: 名称=${name}, 价格=${current}, 昨收=${previousClose}, 涨跌=${change}, 涨跌幅=${changePercent}%`
