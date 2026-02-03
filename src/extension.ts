@@ -43,6 +43,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
   private stocksData: Map<string, StockData> = new Map();
   private isLoading: boolean = true;
   private stockCodeList: string[] = [];
+  private holdingShares: Map<string, number> = new Map(); // 存储持有股数
   private lastUpdateTime: string = '';
 
   constructor() {
@@ -55,12 +56,11 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
   private loadStockCodes(): void {
     // 默认显示上证指数
     this.stockCodeList = ["1.000001"];
+    this.holdingShares.clear();
 
     // 读取用户配置的股票代码
     const config = vscode.workspace.getConfiguration("stockInvestment");
     const customCodes = config.get<string[]>("stockCodeList", []);
-
-    console.error('customCodes', customCodes);
 
     if (customCodes && customCodes.length > 0) {
       // 过滤掉空字符串
@@ -69,12 +69,33 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         .filter((code) => code.length > 0);
 
       if (codes.length > 0) {
+        // 解析股票代码和持有股数
+        const parsedCodes: string[] = [];
+        for (const code of codes) {
+          // 支持 "市场.代码" 或 "市场.代码:持有股数" 格式
+          const parts = code.split(":");
+          const stockCode = parts[0].trim();
+          
+          if (stockCode) {
+            parsedCodes.push(stockCode);
+            
+            // 如果配置了持有股数，保存到映射表
+            if (parts.length > 1) {
+              const shares = parseFloat(parts[1].trim());
+              if (!isNaN(shares) && shares > 0) {
+                this.holdingShares.set(stockCode, shares);
+              }
+            }
+          }
+        }
+
         // 使用自定义股票代码
-        this.stockCodeList = codes;
+        this.stockCodeList = parsedCodes;
       }
     }
 
     console.log("加载的股票代码:", this.stockCodeList);
+    console.log("持有股数映射:", Array.from(this.holdingShares.entries()));
   }
 
   // 刷新视图
@@ -208,7 +229,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
     const isUp = changeNum >= 0;
     const arrow = isUp ? "↑" : "↓";
 
-    return [
+    const items: StockItem[] = [
       new StockItem(
         "昨日收盘",
         vscode.TreeItemCollapsibleState.None,
@@ -228,6 +249,43 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
         )
       ),
     ];
+
+    // 如果配置了持有股数，显示持仓信息
+    const shares = this.holdingShares.get(stockCode);
+    if (shares) {
+      // 持有股数
+      items.push(
+        new StockItem(
+          "持有股数",
+          vscode.TreeItemCollapsibleState.None,
+          `${shares}`,
+          new vscode.ThemeIcon(
+            "database",
+            new vscode.ThemeColor("charts.purple")
+          )
+        )
+      );
+
+      // 今日盈亏 = 涨跌点数 × 持有股数
+      const profitLoss = changeNum * shares;
+      const profitLossStr = profitLoss >= 0 
+        ? `+${profitLoss.toFixed(2)}` 
+        : profitLoss.toFixed(2);
+      
+      items.push(
+        new StockItem(
+          "今日盈亏",
+          vscode.TreeItemCollapsibleState.None,
+          profitLossStr,
+          new vscode.ThemeIcon(
+            profitLoss >= 0 ? "arrow-up" : "arrow-down",
+            new vscode.ThemeColor(profitLoss >= 0 ? "charts.red" : "charts.green")
+          )
+        )
+      );
+    }
+
+    return items;
   }
 
   // 获取所有股票数据（批量方式）
