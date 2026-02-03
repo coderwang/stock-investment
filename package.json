@@ -30,10 +30,13 @@
     "configuration": {
       "title": "股票看盘",
       "properties": {
-        "stockInvestment.stockCodes": {
-          "type": "string",
-          "default": "",
-          "description": "自定义股票代码，使用逗号分隔。格式：市场.代码。\n例如: 1.600519,0.300316,116.00700,105.AAPL\n(0=深圳, 1=上海, 116=港股, 105、106、107=美股)"
+        "stockInvestment.stockCodeList": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "自定义股票代码列表。格式：市场.代码。\n例如: 1.600519, 0.300316, 116.00700, 105.AAPL\n(0=深圳, 1=上海, 116=港股, 105、106、107=美股)"
         }
       }
     },

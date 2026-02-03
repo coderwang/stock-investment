@@ -42,7 +42,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 
   private stocksData: Map<string, StockData> = new Map();
   private isLoading: boolean = true;
-  private stockCodes: string[] = [];
+  private stockCodeList: string[] = [];
   private lastUpdateTime: string = '';
 
   constructor() {
@@ -54,23 +54,27 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
   // 加载股票代码配置
   private loadStockCodes(): void {
     // 默认显示上证指数
-    this.stockCodes = ["1.000001"];
+    this.stockCodeList = ["1.000001"];
 
     // 读取用户配置的股票代码
     const config = vscode.workspace.getConfiguration("stockInvestment");
-    const customCodes = config.get<string>("stockCodes", "");
+    const customCodes = config.get<string[]>("stockCodeList", []);
 
-    if (customCodes && customCodes.trim()) {
+    console.error('customCodes', customCodes);
+
+    if (customCodes && customCodes.length > 0) {
+      // 过滤掉空字符串
       const codes = customCodes
-        .split(",")
         .map((code) => code.trim())
         .filter((code) => code.length > 0);
 
-      // 使用自定义股票代码
-      this.stockCodes = codes;
+      if (codes.length > 0) {
+        // 使用自定义股票代码
+        this.stockCodeList = codes;
+      }
     }
 
-    console.log("加载的股票代码:", this.stockCodes);
+    console.log("加载的股票代码:", this.stockCodeList);
   }
 
   // 刷新视图
@@ -114,7 +118,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
     const items: StockItem[] = [];
 
     // 按照配置顺序显示股票
-    for (const code of this.stockCodes) {
+    for (const code of this.stockCodeList) {
       const stockData = this.stocksData.get(code);
 
       if (!stockData) {
@@ -228,7 +232,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 
   // 获取所有股票数据（批量方式）
   private fetchAllStockData(): void {
-    if (this.stockCodes.length === 0) {
+    if (this.stockCodeList.length === 0) {
       this.isLoading = false;
       this._onDidChangeTreeData.fire();
       return;
@@ -241,7 +245,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
     this.stocksData.clear();
 
     // 批量获取股票数据
-    this.fetchBatchStocks(this.stockCodes, updateTime, () => {
+    this.fetchBatchStocks(this.stockCodeList, updateTime, () => {
       this.isLoading = false;
       this._onDidChangeTreeData.fire();
     });
@@ -249,15 +253,15 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
 
   // 批量获取股票数据
   private fetchBatchStocks(
-    stockCodes: string[],
+    stockCodeList: string[],
     updateTime: string,
     callback: () => void
   ): void {
     // 使用批量查询API，一次性获取所有股票数据
-    const secids = stockCodes.join(",");
+    const secids = stockCodeList.join(",");
     const url = `http://push2.eastmoney.com/api/qt/ulist.np/get?secids=${secids}&fields=f12,f13,f14,f2,f4,f3,f18`;
 
-    console.log(`批量获取 ${stockCodes.length} 只股票数据`);
+    console.log(`批量获取 ${stockCodeList.length} 只股票数据`);
 
     http
       .get(url, (res) => {
@@ -360,7 +364,7 @@ export function activate(context: vscode.ExtensionContext) {
   // 监听配置变化
   const configChangeListener = vscode.workspace.onDidChangeConfiguration(
     (e) => {
-      if (e.affectsConfiguration("stockInvestment.stockCodes")) {
+      if (e.affectsConfiguration("stockInvestment.stockCodeList")) {
         console.log("股票代码配置已更改，重新加载数据");
         stockDataProvider.refresh();
       }
