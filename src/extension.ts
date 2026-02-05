@@ -374,7 +374,7 @@ class StockDataProvider implements vscode.TreeDataProvider<StockItem> {
   ): void {
     // 使用批量查询API，一次性获取所有股票数据
     const secids = stockCodeList.join(",");
-    const url = `http://push2.eastmoney.com/api/qt/ulist.np/get?secids=${secids}&fields=f12,f13,f14,f2,f4,f3,f18`;
+    const url = `http://push2delay.eastmoney.com/api/qt/ulist.np/get?secids=${secids}&fields=f12,f13,f14,f2,f4,f3,f18`;
 
     console.log(`批量获取 ${stockCodeList.length} 只股票数据`);
 
